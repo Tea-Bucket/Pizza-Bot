@@ -1,0 +1,125 @@
+﻿@page "/admin{secretpath}/pay"
+@using System.Globalization
+@rendermode InteractiveServer
+@inject PizzaDBService PizzaDBService
+@inject NavigationManager NavigationManager
+
+<PageTitle>PizzaPay</PageTitle>
+
+<h3>AdminPay</h3>
+
+<div class="pizza-order-grid">
+    <div class="right-border">Paid?</div>
+    <div class="right-border">Name</div>
+    <div class="right-border">Price</div>
+    <div style="text-align:center; grid-column-start: span 3;">Pieces</div>
+
+    <div class="right-border"></div>
+    <div class="right-border"></div>
+    <div class="right-border"></div>
+    <div class="right-border">🍖</div>
+    <div class="right-border">🍄+🧀</div>
+    <div class="right-border">🌽</div>
+
+    @foreach (PizzaRequest request in PizzaDBService.GetAllRequests())
+    {
+        PizzaResult? result = PizzaDBService.GetResultById(request.Id);
+        if (result == null)
+        {
+            <p class="request error" style="color: red; grid-column-start: span @gridwidth;">ERROR: Result of request with name @request.Name not found!</p>
+        }
+        else
+        {
+            <div class="request">
+                @if (result.hasPaid)
+                {
+                    <button @onclick="() => MarkAsUnpaid(result.Id)">
+                        ✅
+                    </button>
+                }
+                else
+                {
+                    <button @onclick="() => MarkAsPaid(result.Id)">
+                        ❌
+                    </button>
+                }
+            </div>
+            <div class="request">@request.Name</div>
+            <div class="request">@totalCostToString(result.totalCost)</div>
+            <div class="request">@result.resPiecesMeat / @request.reqPiecesMeat</div>
+            <div class="request">@result.resPiecesVegetarian / @request.reqPiecesVegetarian</div>
+            <div class="request">@result.resPiecesVegan / @request.reqPiecesVegan</div>
+        }
+    }
+</div>
+
+<style>
+    .pizza-order-grid {
+        display: grid;
+        grid-template-columns: 1fr 25vw repeat(@(gridwidth - 2), 1fr);
+        grid-auto-rows: auto;
+    }
+
+        .pizza-order-grid > * {
+            word-break: break-all;
+            overflow: auto;
+            padding: 5px;
+        }
+
+        .pizza-order-grid > .request {
+            border-top: solid 1px gray;
+            font-size: 0.8em;
+        }
+
+            .pizza-order-grid > .request:not(.price):not(.error),
+            .pizza-order-grid > .right-border {
+                border-right: solid 1px gray;
+            }
+
+    .request button {
+        width: 2.5em;
+        aspect-ratio: 1;
+        text-align: center;
+        font-size: 1em;
+        padding: 0;
+        background: none;
+        outline: none;
+        appearance:none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        border: none;
+    }
+</style>
+
+@code {
+
+
+    [Parameter]
+    public string secretpath { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (secretpath != Environment.GetEnvironmentVariable("ADMIN_PATH"))
+        {
+            NavigationManager.NavigateTo("/"); return;
+        }
+    }
+
+    int gridwidth = 6;
+
+    string totalCostToString(float totalCost)
+    {
+        return totalCost.ToString("C2", CultureInfo.CreateSpecificCulture("de-DE"));
+    }
+
+    public void MarkAsPaid(int id)
+    {
+        PizzaDBService.MarkAsPaid(id);
+    }
+
+    public void MarkAsUnpaid(int id)
+    {
+        PizzaDBService.MarkAsNotPaid(id);
+    }
+
+}

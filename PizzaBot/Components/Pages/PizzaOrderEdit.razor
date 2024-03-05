@@ -1,0 +1,198 @@
+﻿@page "/order/edit/{id:int}"
+@rendermode InteractiveServer
+@inherits LayoutComponentBase
+@inject PizzaDBService pizzaDBService
+@inject NavigationManager Navigation
+@inject GlobalStuffService GlobalStuffService
+
+<PageTitle> Change Pizza Order </PageTitle>
+
+@if (errorEncountered)
+{
+    <p style="color: red; font-weight: 700;"> @ErrorMessage </p>
+}
+@if (submissionSuccessful)
+{
+    <p style="color: lawngreen; font-weight: 700;"> @SuccessfulSubmissionMessage </p>
+}
+
+<EditForm Model=@Order OnValidSubmit="@FormSubmitted" FormName="PizzaOrderForm">
+    <DataAnnotationsValidator />
+    <h3>
+        @Order.Name
+    </h3>
+    <label for="PiecesGroup" style="margin-top: 1em;">Pieces</label>
+    <span style="font-size: 0.7em;">One slice = ca. @GlobalStuffService.GetSizeOfSliceInCM2().ToString("F0") cm<sup>2</sup></span>
+    <div class="row" id="PiecesGroup">
+        <div class="form-group col">
+            <label for="meatPieces">🍖</label>
+            <InputNumber @bind-Value=Order.reqPiecesMeat class="form-control" id="meatPieces" ParsingErrorMessage="Must be integer value" />
+            <ValidationMessage For="() => Order.reqPiecesMeat" />
+        </div>
+        <div class="form-group col">
+            <label for="vegetarianPieces">🍄 + 🧀</label>
+            <InputNumber @bind-Value=Order.reqPiecesVegetarian class="form-control" id="vegetarianPieces" ParsingErrorMessage="Must be integer value" />
+            <ValidationMessage For="() => Order.reqPiecesVegetarian" />
+        </div>
+        <div class="form-group col">
+            <label for="veganPieces">🌽</label>
+            <InputNumber @bind-Value=Order.reqPiecesVegan class="form-control" id="veganPieces" ParsingErrorMessage="Must be integer value" />
+            <ValidationMessage For="() => Order.reqPiecesVegan" />
+        </div>
+    </div>
+    <div class="form-group" style="margin-top: 3rem;">
+        <label for="priorityMeat" style="text-align:center;"> Priority </label>
+        <p style="text-align:center; font-size: 0.8em; margin: 0;">
+            The balancing algorithm tries to avoid changes of the corresponding Variable <br />
+            <i style="font-size: 0.8em;">E.g. If you want to only get pieces from your chosen category put the slider all the way to the left</i>
+        </p>
+
+        <div class="priority-slider-container">
+            <div> Category </div>
+            <RadzenSlider @bind-Value=Order.priority TValue="float" Min="0" Max="1" Step="0.01" id="priorityMeat" />
+            <div> Total Count</div>
+        </div>
+    </div>
+    <input type="submit" value="💾 Save Changes 💾" class="btn btn-primary" />
+</EditForm>
+
+<div class="deletion-container">
+    @if (!showDeletionConfirmation)
+    {
+        <button @onclick="ShowDeleteConfirmation"> 🗑 Delete </button>
+    }
+    else
+    {
+
+        <p>Are you sure you want to delete this order? <br /></p>
+        <div class="confirmation-buttons">
+            <button @onclick="DeleteOrder">🗑 Delete</button>
+            <button @onclick="() => showDeletionConfirmation = false">Cancel</button>
+        </div>
+    }
+</div>
+
+<style>
+    label {
+        display: block;
+    }
+
+    #priorityMeat,
+    #priorityVegan {
+        --rz-slider-horizontal-width: 80%;
+        margin: 1em 0;
+    }
+
+    .pizza-piece-form-group {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-gap: 3px;
+        margin: 2rem 3px;
+    }
+
+    .deletion-container {
+        margin: 2rem 0;
+        background-color: red;
+        width: fit-content;
+        padding: 0.5rem;
+        color: whitesmoke;
+        font-weight: 700;
+        border-radius: 0.25rem;
+    }
+
+    .confirmation-buttons {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .deletion-container .confirmation-buttons button {
+        border: solid 0.1rem whitesmoke;
+        border-radius: 0.25rem;
+        padding: 0.5rem;
+        margin: 0.5rem;
+    }
+
+    .deletion-container button {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        border: none;
+        margin: 0;
+        padding: 0.3rem;
+        background: none;
+        cursor: pointer;
+        outline: none;
+        color: whitesmoke;
+        font-weight: 700;
+    }
+</style>
+
+@code {
+    bool showDeletionConfirmation = false;
+
+    private void ShowDeleteConfirmation()
+    {
+        // Display the confirmation modal
+        showDeletionConfirmation = true;
+    }
+
+
+    [Parameter]
+    public int id { get; set; }
+
+    bool errorEncountered = false;
+    string ErrorMessage = "";
+
+    bool submissionSuccessful = false;
+    string SuccessfulSubmissionMessage = "Request submitted successfully";
+
+    PizzaRequest Order = new PizzaRequest();
+    // Random rnd = new Random();
+
+    protected override void OnInitialized()
+    {
+        Order = pizzaDBService.GetRequestById(id);
+        if(Order == null)
+        {
+            Navigation.NavigateTo("/orderlist", true);
+        }
+    }
+
+    void FormSubmitted(EditContext editContext)
+    {
+
+        if (!pizzaDBService.UpdateRequest(Order, out ErrorMessage))
+        {
+            errorEncountered = true;
+            submissionSuccessful = false;
+            return;
+        }
+
+        errorEncountered = false;
+        submissionSuccessful = true;
+
+        Order = pizzaDBService.GetRequestById(id);
+
+        // if(Order.reqPiecesMeat + Order.reqPiecesVegetarian + Order.reqPiecesVegan < 1)
+        // {
+        //     submittedZeroPieces = true;
+        //     submissionSuccessful = false;
+        //     return;
+        // }
+
+        // submittedZeroPieces = false;
+        // submissionSuccessful = true;
+
+        // Status = "Form Submitted";
+        // Order.Id = rnd.Next(int.MaxValue);
+        // OrderContext.Requests.Add(Order);
+        // OrderContext.SaveChanges();
+    }
+
+    void DeleteOrder()
+    {
+        pizzaDBService.DeleteById(id);
+        Navigation.NavigateTo("/orderlist");
+    }
+}

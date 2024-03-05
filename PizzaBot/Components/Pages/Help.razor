@@ -1,0 +1,33 @@
+﻿@page "/help"
+@inject GlobalStuffService GlobalStuffService
+
+<PageTitle>Pizza Help</PageTitle>
+
+<h3>How To Pizza</h3>
+
+<p>You can choose any number of slices from any of the three categories of pizzas - meat, vegetarian and vegan.</p>
+<p>Each pizza of size @((_config.SizeX * 100).ToString("F0"))cm X @(_config.SizeY * 100)cm is cut into @(_config.Fragments) pieces of approximately @GlobalStuffService.GetSizeOfSliceInCM2().ToString("F0")cm<sup>2</sup>.</p>
+<p>
+    The system calculates how many pizzas should be ordered and distributes slices according to the pieces you request and the priority you set.
+    This means, you might get more or less slices than you requested, or slices from a different category than you requested.
+    The system tries to respect your wishes. If you are not happy with the outcome, try changing your priority.
+</p>
+<p>In the list, you can see your order: <i> Name, Assigned pieces / Requested pieces (for each category), Price </i></p>
+<p>
+    🍖 = Meat <br />
+    🍄🧀 = Vegetarian <br />
+    🌽 = Vegan
+</p>
+
+@code {
+    PizzaConfig _config;
+
+    protected override void OnInitialized()
+    {
+        _config = GlobalStuffService.GetConfig();
+        if(_config == null)
+        {
+            _config = new PizzaConfig();
+        }
+    }
+}

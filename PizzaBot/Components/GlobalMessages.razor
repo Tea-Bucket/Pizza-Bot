@@ -1,0 +1,11 @@
+﻿@inject GlobalStuffService GlobalStuffService
+
+@if (GlobalStuffService.OrdersLocked)
+{
+    <p style="font-size: 1.2em; color: red;"> @GlobalStuffService.LOCKED_ORDERS_MESSAGE </p>
+}
+@if (GlobalStuffService.Message.Length >= 2)
+{
+    <p style="font-size: 1.5em; color: limegreen;"> @GlobalStuffService.Message </p>
+
+}

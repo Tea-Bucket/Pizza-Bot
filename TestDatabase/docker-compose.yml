@@ -1,0 +1,14 @@
+services:
+  database:
+    image: mysql
+    volumes:
+        - ./database:/var/lib/mysql
+        - ./setup.sql:/docker-entrypoint-initdb.d/1.sql
+    restart: always
+    ports:
+        - 3306:3306
+    environment:
+        MYSQL_ROOT_PASSWORD: QEwqTdS#7pxEy#
+        MYSQL_USER: PizzaBotDev
+        MYSQL_PASSWORD: PizzaDeliveryEverywhere!
+        MYSQL_DATABASE: PizzaBotTest

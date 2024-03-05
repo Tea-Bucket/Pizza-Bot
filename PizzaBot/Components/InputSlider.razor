@@ -1,0 +1,36 @@
+﻿@using System.Text.RegularExpressions
+
+@inherits InputBase<float>
+
+<input type="range" @attributes=AdditionalAttributes class=@CssClass @bind=CurrentValueAsString />
+
+@code{
+    protected override string FormatValueAsString(float value)
+    => value.ToString("F5");
+
+
+    static Regex decimalNumberRegex = new Regex(@"^-?\d+(\.\d+)?$", RegexOptions.Compiled);
+
+    protected override bool TryParseValueFromString(string value, out float result, out string validationErrorMessage)
+    {
+        Match match = decimalNumberRegex.Match(value);
+        if (!match.Success)
+        {
+            validationErrorMessage = "Not a valid float";
+            result = 0.0f;
+            return false;
+        }
+
+        if(float.TryParse(value, out float parsingResult))
+        {
+            result = parsingResult;
+            validationErrorMessage = null;
+            return true;
+        }
+
+        validationErrorMessage = "Not a valid float";
+        result = 0.0f;
+        return false;
+    }
+
+}

@@ -1,0 +1,17 @@
+﻿@inject GlobalStuffService GlobalStuffService
+
+<p>
+    <span>🍖: @GlobalStuffService.MeatPizzas</span>
+    <span>🍄 + 🧀: @GlobalStuffService.VeggiePizzas</span>     
+    <span>🌽: @GlobalStuffService.VeganPizzas</span>
+    <span>=> @GlobalStuffService.TotalCost.ToString("F2")€</span></p>
+
+<style>
+    p{
+        font-size: 0.6em;
+        color: gray;
+    }
+    span{
+        padding-inline: 0.5em;
+    }
+</style>

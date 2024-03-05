@@ -1,0 +1,118 @@
+﻿@page "/order"
+@rendermode InteractiveServer
+@inherits LayoutComponentBase
+@inject PizzaDBService PizzaDBService
+@inject GlobalStuffService GlobalStuffService
+@inject Microsoft.AspNetCore.Components.NavigationManager NavigationManager
+
+
+<PageTitle> Order Pizza </PageTitle>
+
+@if (errorEncountered)
+{
+    <p style="color: red; font-weight: 700;"> @ErrorMessage </p>
+}
+@if (submissionSuccessful)
+{
+    <p style="color: lawngreen; font-weight: 700;"> @SuccessfulSubmissionMessage </p>
+}
+
+
+
+<EditForm Model=@Order OnValidSubmit="@FormSubmitted" FormName="PizzaOrderForm">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <label for="Name">Name</label><span style="font-size:0.7em; color:dimgrey; margin:0;">must be unique</span>
+        <InputText @bind-Value=Order.Name id="Name" class="form-control" />
+        <ValidationMessage For="() => Order.Name" />
+    </div>
+    <label for="PiecesGroup" style="margin-top: 1em;">Pieces</label>
+    <span style="font-size: 0.7em;">One slice = ca. @GlobalStuffService.GetSizeOfSliceInCM2().ToString("F0") cm<sup>2</sup></span>
+    <div class="row" id="PiecesGroup">
+        <div class="form-group col">
+            <label for="meatPieces">🍖</label>
+            <InputNumber @bind-Value=Order.reqPiecesMeat class="form-control" id="meatPieces" ParsingErrorMessage="Must be integer value" />
+            <ValidationMessage For="() => Order.reqPiecesMeat" />
+        </div>
+        <div class="form-group col">
+            <label for="vegetarianPieces">🍄 + 🧀</label>
+            <InputNumber @bind-Value=Order.reqPiecesVegetarian class="form-control" id="vegetarianPieces" ParsingErrorMessage="Must be integer value" />
+            <ValidationMessage For="() => Order.reqPiecesVegetarian" />
+        </div>
+        <div class="form-group col">
+            <label for="veganPieces">🌽</label>
+            <InputNumber @bind-Value=Order.reqPiecesVegan class="form-control" id="veganPieces" ParsingErrorMessage="Must be integer value" />
+            <ValidationMessage For="() => Order.reqPiecesVegan" />
+        </div>
+    </div>
+    <div class="form-group" style="margin-top: 3rem;">
+        <label for="priorityMeat" style="text-align:center;"> Priority </label>
+        <p style="text-align:center; font-size: 0.8em; margin: 0;">
+            The balancing algorithm tries to avoid changes of the corresponding Variable <br />
+            <i style="font-size: 0.8em;">E.g. If you want to only get pieces from your chosen category put the slider all the way to the left</i></p>
+        
+        <div class="priority-slider-container">
+            <div> Category </div>
+            <RadzenSlider @bind-Value=Order.priority TValue="float" Min="0" Max="1" Step="0.01" id="priorityMeat" />
+            <div> Total Count</div>
+        </div>
+    </div>
+    <input type="submit" value="Submit" class="btn btn-primary"/>
+</EditForm>
+
+<style>
+    label {
+        display: block;
+    }
+
+    #priorityMeat,
+    #priorityVegan {
+        --rz-slider-horizontal-width: 100%;
+        margin: 1em 0;
+    }
+
+    .pizza-piece-form-group {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-gap: 3px;
+        margin: 2rem 3px;
+    }
+
+    .priority-slider-container{
+        padding-bottom: 1rem;
+        display: flex;
+        flex-direction:row;
+        align-items: center;
+        gap: 1em;
+        font-size: 0.75em;
+    }
+</style>
+
+@code {
+    bool errorEncountered = false;
+    string ErrorMessage = "";
+
+    bool submissionSuccessful = false;
+    string SuccessfulSubmissionMessage = "Request submitted successfully";
+
+    PizzaRequest Order = new PizzaRequest();
+    // Random rnd = new Random();
+
+    void FormSubmitted(EditContext editContext)
+    {
+
+        if (PizzaDBService.Create(Order, out ErrorMessage) == null)
+        {
+            errorEncountered = true;
+            submissionSuccessful = false;
+            return;
+        }
+
+        errorEncountered = false;
+        submissionSuccessful = true;
+
+        Order = new PizzaRequest();
+    
+        NavigationManager.NavigateTo("/orderlist");
+    }
+}

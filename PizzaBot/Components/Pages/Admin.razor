@@ -1,0 +1,164 @@
+﻿@page "/admin{secretpath}"
+@rendermode InteractiveServer
+@inject GlobalStuffService GlobalStuffService
+@inject PizzaDBService PizzaDBService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Pizza Admin</PageTitle>
+
+<TotalPizzasDisplay />
+
+<h3>Hello, you are my GOD!</h3>
+
+
+<h4>Order Locking</h4>
+<button @onclick="ToggleOrdersLocked" class="btn btn-danger">
+    @if (GlobalStuffService.OrdersLocked)
+    {
+        <span>Unlock Orders</span>
+    }
+    else
+    {
+        <span>Lock Orders</span>
+    }
+</button>
+
+
+<h4>Global Message</h4>
+<InputText @bind-Value=GlobalMessage id="Message" />
+<button @onclick="SetGlobalMessage">
+    Confirm Message
+</button>
+
+@if (GlobalStuffService.OrdersLocked)
+{
+    <h4>Payment</h4>
+    <a href="/admin@(secretpath)/pay"><div class="btn btn-primary">Go to payment screen</div></a>
+}
+
+<h4>Delete Orders</h4>
+@if (HasDeletedEverything)
+{
+    <p style="color: lime">Deleted everything</p>
+}
+@if (WrongDeletionPasscode)
+{
+    <p style="color: red">Wrong passphrase</p>
+}
+
+<label for="Passphrase">Deletion Passphrase</label>
+<InputText @bind-Value=DeletionPasscode id="Passphrase" class="form-control" />
+
+<button @onclick="() => {DeleteOrderConfirmation = true;}" class="btn btn-danger">
+    DELETE ALL ORDERS
+</button>
+@if (DeleteOrderConfirmation)
+{
+    <button @onclick="DeleteAllOrders" class="btn btn-danger">
+        ARE YOU SURE?
+    </button>
+}
+
+<h4>Configuration</h4>
+<EditForm Model="@PConfig" OnValidSubmit="@SaveNewPizzaConfig" FormName="PizzaConfigForm">
+    <div class="form-group">
+        <label for="SizeX">Width of Pizza</label>
+        <InputNumber @bind-Value=PConfig.SizeX id="SizeX" class="form-control" ParsingErrorMessage="Must be float value" />
+        <ValidationMessage For="() => PConfig.SizeX " />
+    </div>
+    <div class="form-group">
+        <label for="SizeY">Height of Pizza</label>
+        <InputNumber @bind-Value=PConfig.SizeY id="SizeY" class="form-control" ParsingErrorMessage="Must be float value" />
+        <ValidationMessage For="() => PConfig.SizeY " />
+    </div>
+    <div class="form-group">
+        <label for="Price">Price of Pizza in Cents</label>
+        <InputNumber @bind-Value=PConfig.Price id="Price" class="form-control" ParsingErrorMessage="Must be integer value" />
+        <ValidationMessage For="() => PConfig.Price " />
+    </div>
+    <div class="form-group">
+        <label for="Pieces">Pieces per Pizza</label>
+        <InputNumber @bind-Value=PConfig.Fragments id="Pieces" class="form-control" ParsingErrorMessage="Must be integer value" />
+        <ValidationMessage For="() => PConfig.Fragments " />
+    </div>
+    <div class="form-group">
+        <label for="Toppings">Number of allowed toppings per pizza</label>
+        <InputNumber @bind-Value=PConfig.Toppings id="Toppings" class="form-control" ParsingErrorMessage="Must be integer value" />
+        <ValidationMessage For="() => PConfig.Toppings " />
+    </div>
+    <div class="form-group">
+        <label for"MaxNameLength">Maximum length of names</label>
+        <InputNumber @bind-Value=PConfig.NameLength id="MaxNameLength" class="form-control" ParsingErrorMessage="Must be integer value" />
+        <ValidationMessage For="() => PConfig.NameLength " />
+    </div>
+    <div class="form-group">
+        <label for="PenaltyType">Penalty Type used for balancing</label>
+        <InputSelect @bind-Value=PConfig.PenaltyType id="PenaltyType" class="form-control">
+            <option value="@Models.PenaltyType.Tuxic">Tuxic Penalty (Original)</option>
+            <option value="@Models.PenaltyType.PfeifferTreimer">Pfeiffer-Treimer Penalty (Default)</option>
+            <option value="@Models.PenaltyType.PfeifferTreimerLockedDown">Pfeiffer-Treimer Penalty (Clamped)</option>
+        </InputSelect>
+    </div>
+    <input type="submit" value="Submit" class="btn btn-primary" />
+</EditForm>
+
+
+<style>
+    h4 {
+        margin-top: 2rem !important;
+    }
+</style>
+
+
+
+@code {
+    PizzaConfig PConfig = new PizzaConfig();
+    string GlobalMessage = "";
+
+    [Parameter]
+    public string secretpath { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (secretpath != Environment.GetEnvironmentVariable("ADMIN_PATH"))
+        {
+            NavigationManager.NavigateTo("/"); return;
+        }
+
+        GlobalMessage = GlobalStuffService.Message;
+    }
+
+    bool DeleteOrderConfirmation = false;
+    bool HasDeletedEverything = false;
+    bool WrongDeletionPasscode = false;
+    string DeletionPasscode = "";
+
+    void SaveNewPizzaConfig(EditContext editContext)
+    {
+        GlobalStuffService.SetConfig(PConfig);
+        GlobalStuffService.ShouldBalance = true;
+    }
+
+    void ToggleOrdersLocked()
+    {
+        GlobalStuffService.SetOrdersLocked(!GlobalStuffService.OrdersLocked);
+    }
+
+    void SetGlobalMessage()
+    {
+        GlobalStuffService.SetMessage(GlobalMessage);
+    }
+
+    void DeleteAllOrders()
+    {
+        HasDeletedEverything = PizzaDBService.DeleteAllOrders(DeletionPasscode);
+        WrongDeletionPasscode = !HasDeletedEverything;
+
+        DeleteOrderConfirmation = false;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        PConfig = GlobalStuffService.GetConfig() ?? new PizzaConfig();
+    }
+}

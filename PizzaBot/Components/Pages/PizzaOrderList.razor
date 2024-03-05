@@ -1,0 +1,121 @@
+﻿@page "/orderlist"
+@page "/"
+@using System.Globalization
+@inject PizzaDBService PizzaDBService
+@inject Microsoft.AspNetCore.Components.NavigationManager navigationManager
+@inject GlobalStuffService GlobalStuffService
+@attribute [StreamRendering]
+
+<PageTitle>Pizza List</PageTitle>
+
+<div style="display: flex; ">
+    <TotalPizzasDisplay />
+    <div style ="display: flex; flex-direction:column; margin-left:auto; align-items:flex-end;">
+        <OrderButton />
+        <HelpButton />
+    </div>
+</div>
+
+<h3>Pizza Order List</h3>
+
+<div class="pizza-order-grid">
+    <div class="right-border">Name</div>
+    <div class="right-border" style="grid-column-start: span 3;">Pieces</div>
+    <div class ="right-border">Price</div>
+    @if (GlobalStuffService.OrdersLocked)
+    {
+        <div>Paid?</div>
+    }
+    else
+    {
+        <div></div>
+    }
+
+    <div class="right-border" style="grid-area: 2 / 1 / 2 / 1"></div>
+    <div class="right-border" style="font-size: 0.7em;">Meat</div>
+    <div class="right-border" style="font-size: 0.6em;">Veggie</div>
+    <div class="right-border" style="font-size: 0.7em;">Vegan</div>
+    <div class="right-border"></div>
+    <div style="grid-column-start: span @(gridwidth - 5);"></div>
+
+    <div class="right-border" style="grid-area: 3 / 1 / 3 / 1"></div>
+    <div class="right-border">🍖</div>
+    <div class="right-border">🍄🧀</div>
+    <div class="right-border">🌽</div>
+    <div class="right-border"></div>
+    <div style="grid-column-start: span @(gridwidth - 5);"></div>
+
+    @foreach (PizzaRequest request in PizzaDBService.GetAllRequests())
+    {
+        PizzaResult? result = PizzaDBService.GetResultById(request.Id);
+        if (result == null)
+        {
+            <p class="request error" style="color: red; grid-column-start: span @gridwidth;">ERROR: Result of request with name @request.Name not found!</p>
+        }
+        else
+        {
+            <div class="request right-border">@request.Name</div>
+            <div class="request right-border">@result.resPiecesMeat<span style="font-size:0.8em; color:dimgrey;">/ @request.reqPiecesMeat</span></div>
+            <div class="request right-border">@result.resPiecesVegetarian<span style="font-size:0.8em; color:dimgrey;">/ @request.reqPiecesVegetarian</span></div>
+            <div class="request right-border">@result.resPiecesVegan<span style="font-size:0.8em; color:dimgrey;">/ @request.reqPiecesVegan</span></div>
+            <div class="request price right-border">@totalCostToString(result.totalCost)</div>
+            @if (GlobalStuffService.OrdersLocked)
+            {
+                if (result.hasPaid)
+                {
+                    <div class="request">
+                        ✅
+                    </div>
+                }
+                else
+                {
+                    <div class="request">
+                        ❌
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="request"><a href="/order/edit/@request.Id"><button class="btn btn-info" style="width: 2em; height: 2em; padding: 0; text-align:center;">🔧</button></a></div>
+            }
+        }
+    }
+</div>
+
+<div style="height:50px;" />
+<style>
+    .pizza-order-grid {
+        display: grid;
+        grid-template-columns: 25vw repeat(@(gridwidth - 2), 1fr) 3em;
+        grid-auto-rows: auto;
+    }
+
+        .pizza-order-grid > * {
+            word-break: break-all;
+            overflow: auto;
+            padding: 5px;
+        }
+
+        .pizza-order-grid > .request {
+            border-top: solid 1px gray;
+            font-size: 0.8em;
+        }
+
+        .pizza-order-grid > .right-border:not(.error) {
+            border-right: solid 1px gray;
+        }
+</style>
+
+@code {
+    int gridwidth = 6;
+
+    string totalCostToString(float totalCost)
+    {
+        return totalCost.ToString("C2", CultureInfo.CreateSpecificCulture("de-DE"));
+    }
+
+    private void NavigateToEdit(int id)
+    {
+        navigationManager.NavigateTo($"/order/edit/{id}");
+    }
+}
