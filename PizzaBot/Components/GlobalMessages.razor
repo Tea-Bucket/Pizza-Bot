@@ -1,4 +1,5 @@
 ﻿@inject GlobalStuffService GlobalStuffService
+@rendermode InteractiveServer
 
 @if (GlobalStuffService.OrdersLocked)
 {
@@ -8,4 +9,20 @@
 {
     <p style="font-size: 1.5em; color: limegreen;"> @GlobalStuffService.Message </p>
 
+}
+
+@code{
+    protected override void OnInitialized()
+    {
+        EventHandler Reload = async (sender, eventArgs) =>
+            {
+                await InvokeAsync(StateHasChanged);
+            };
+        GlobalStuffService.OnLockOrMessageChange += Reload;
+    }
+
+
+    void ReloadState(){
+        StateHasChanged();
+    }
 }

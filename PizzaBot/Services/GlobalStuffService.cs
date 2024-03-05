@@ -11,6 +11,7 @@ namespace PizzaBot.Services
         private bool _ordersLocked;
         public readonly string LOCKED_ORDERS_MESSAGE = "Orders have been locked. Pizza will be ordered soon.";
 
+        public event EventHandler OnLockOrMessageChange;
         public int MeatPizzas { get; set; }
         public int VeggiePizzas { get; set; }
         public int VeganPizzas { get; set; }
@@ -32,6 +33,7 @@ namespace PizzaBot.Services
         public void SetMessage(string message)
         {
             _message = message;
+            OnLockOrMessageChange(this, null);
         }
 
         public void SetOrdersLocked(bool ordersLocked)
@@ -39,6 +41,7 @@ namespace PizzaBot.Services
             _ordersLocked = ordersLocked;
 
             ShouldBalance = true;
+            OnLockOrMessageChange(this, null);
         }
 
         public PizzaConfig? GetConfig()
