@@ -1,0 +1,37 @@
+﻿@inject ArchiveService ArchiveService
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+<QuickGrid Pagination="Pagination" Items="@ArchiveService.GetAllEntries().AsQueryable()">
+    <PropertyColumn Property="@(e => e.date)" Format="yyyy.MM.dd" Sortable="true" />
+    @if (ShowOnlyTotalPizza)
+    {
+        <PropertyColumn Title="Pizzas" Property="@(e => (e.MeatPizzas + e.VeggiePizzas + e.VeganPizzas))" Sortable="true" />
+    } else{
+        <PropertyColumn Title="🍖" Property="@(e => e.MeatPizzas)" Sortable="false" />
+        <PropertyColumn Title="🍄🧀" Property="@(e => e.VeggiePizzas)" Sortable="false" />
+        <PropertyColumn Title="🌽" Property="@(e => e.VeganPizzas)" Sortable="false" />
+    }
+    <PropertyColumn Title="🍾" Property="@(e => e.Bottles)" Sortable="false" />
+    <PropertyColumn Title="€" Property="@(e=>e.TotalCost)" />
+</QuickGrid>
+<Paginator State="@Pagination" />
+
+<style>
+    ::deep thead {width: 20px;}
+</style>
+
+@code {
+    [Parameter]
+    public int Number { get; set; }
+
+    [Parameter]
+    public bool ShowOnlyTotalPizza { get; set; }
+
+    PaginationState Pagination;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Pagination = new PaginationState { ItemsPerPage = Number };
+    }
+}

@@ -1,0 +1,74 @@
+﻿@page "/admin{secretpath}/archive"
+@inject NavigationManager NavigationManager
+@inject PizzaDBService PizzaDBService
+@inject GlobalStuffService GlobalStuffService
+@inject ArchiveService ArchiveService
+
+@rendermode InteractiveServer
+
+<PageTitle>Pizza Archive</PageTitle>
+
+<h1>Archive</h1>
+
+<h4>Add current to archive</h4>
+@if (GlobalStuffService.OrdersLocked)
+{
+    <label> Num. Bottles
+        <InputNumber @bind-Value="bottleCount" DisplayName="Bottles" />
+    </label>
+    <button @onclick="AddToArchive" class="btn btn-primary">
+        <span>Add</span>
+    </button>
+}
+else
+{
+    <span>Order's have to be locked to add today to the archive.</span>
+}
+
+<hr>
+
+<div style="overflow-x:scroll;">
+    <ArchiveListComponent Number="25" />
+</div>
+
+@code {
+    [Parameter]
+    public string secretpath { get; set; }
+
+    int bottleCount;
+
+    protected override void OnInitialized()
+    {
+        if (secretpath != Environment.GetEnvironmentVariable("ADMIN_PATH"))
+        {
+            NavigationManager.NavigateTo("/"); return;
+        }
+    }
+
+    void AddToArchive()
+    {
+        PizzaArchiveEntry entry = new PizzaArchiveEntry();
+        entry.date = DateTime.Now;
+        entry.MeatPizzas = GlobalStuffService.MeatPizzas;
+        entry.VeggiePizzas = GlobalStuffService.VeggiePizzas;
+        entry.VeganPizzas = GlobalStuffService.VeganPizzas;
+        entry.TotalCost = GlobalStuffService.TotalCost;
+        entry.Bottles = bottleCount;
+        entry.PenaltyType = GlobalStuffService.GetConfig().PenaltyType;
+        entry.AnonymizedOrders = new List<PizzaArchiveEntry.AnonymizedOrder>();
+
+        var requests = PizzaDBService.GetAllRequests();
+        foreach (var req in requests)
+        {
+            PizzaArchiveEntry.AnonymizedOrder anonymized = new PizzaArchiveEntry.AnonymizedOrder();
+            anonymized.requestedMeatPieces = req.reqPiecesMeat;
+            anonymized.requestedVeggiePieces = req.reqPiecesVegetarian;
+            anonymized.requestedVeganPieces = req.reqPiecesVegan;
+            entry.AnonymizedOrders.Add(anonymized);
+        }
+
+        ArchiveService.AddEntry(entry);
+
+        StateHasChanged();
+    }
+}

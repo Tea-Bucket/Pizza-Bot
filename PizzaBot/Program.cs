@@ -17,6 +17,7 @@ builder.Services.AddDbContext<PizzaContext>(options => options.UseMySql(connecti
 builder.Services.AddSingleton<JSONService>();
 builder.Services.AddSingleton<PizzaBalancingService>();
 builder.Services.AddSingleton<PizzaDBService>();
+builder.Services.AddSingleton<ArchiveService>();
 
 builder.Services.AddSingleton<GlobalStuffService>();
 
