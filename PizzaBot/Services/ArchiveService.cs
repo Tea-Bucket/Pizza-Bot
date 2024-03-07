@@ -5,7 +5,7 @@ namespace PizzaBot.Services
 {
     using PizzaArchiveType = List<PizzaArchiveEntry>;
 
-    public struct PizzaArchiveEntry
+    public class PizzaArchiveEntry
     {
         // id should be a random number
         public int id { get; set; }
@@ -32,6 +32,8 @@ namespace PizzaBot.Services
         PizzaArchiveType _pizzaArchive;
         Random _rng;
 
+        public event EventHandler OnArchiveChange;
+
         public ArchiveService(JSONService jSONService)
         {
             _rng = new Random();
@@ -49,10 +51,7 @@ namespace PizzaBot.Services
 
         public PizzaArchiveType GetAllEntries()
         {
-            PizzaArchiveType copy = _pizzaArchive;
-            PizzaArchiveType? loaded = _jsonService.GetPizzaArchive();
-            _pizzaArchive = loaded == null ? new PizzaArchiveType() : loaded;
-            return copy;
+            return _pizzaArchive;
         }
 
         /// <summary>
@@ -67,16 +66,37 @@ namespace PizzaBot.Services
                 return false;
             }
 
-            entry.id = _rng.Next();
+            if (entry.id == 0)
+            {
+                entry.id = _rng.Next();
+            }
             _pizzaArchive.Add(entry);
             SortArchive();
             _jsonService.WriteNewPizzaArchive(_pizzaArchive);
+
+            OnArchiveChange.Invoke(this, null);
+
             return true;
+        }
+
+        public void ChangeEntry(PizzaArchiveEntry entry)
+        {
+            lock (this)
+            {
+                RemoveEntry(entry.id);
+                AddEntry(entry);
+            }
+        }
+
+        public PizzaArchiveEntry GetEntryByID(int id)
+        {
+            return _pizzaArchive.Find(x => x.id == id);
         }
 
         public bool RemoveEntry(PizzaArchiveEntry entry)
         {
-            return _pizzaArchive.Remove(entry);
+            bool succesfull = _pizzaArchive.Remove(entry);
+            return succesfull;
         }
 
         public bool RemoveEntry(int id)
@@ -87,6 +107,9 @@ namespace PizzaBot.Services
                 return false;
             }
             _pizzaArchive.RemoveAt(index);
+
+            OnArchiveChange.Invoke(this, null);
+
             return true;
         }
 

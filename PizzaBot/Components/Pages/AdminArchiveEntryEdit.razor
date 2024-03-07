@@ -1,0 +1,72 @@
+﻿@page "/admin{secretpath}/archive/{entryIDstring}"
+
+@rendermode InteractiveServer
+
+@inject NavigationManager NavigationManager
+@inject ArchiveService ArchiveService
+
+<PageTitle>Archive @(entry.date.ToString("yy-MM-dd"))</PageTitle>
+
+<h3>Editing archive entry from @(entry.date.ToString("yyyy-MM-dd"))</h3>
+
+<EditForm Model="@entry" OnValidSubmit="@FormSubmitted" FormName="EntryEditForm">
+    <div class="form-goup">
+        <label for="datePicker">Date</label>
+        <InputDate @bind-Value=entry.date class="form-control" id="datePicker" />
+    </div>
+    <div class="row" id="PiecesGroup">
+        <div class="form-group col">
+            <label for="meatPieces">🍖</label>
+            <InputNumber @bind-Value=entry.MeatPizzas class="form-control" id="meatPieces" ParsingErrorMessage="Must be integer value" />
+        </div>
+        <div class="form-group col">
+            <label for="vegetarianPieces">🍄 + 🧀</label>
+            <InputNumber @bind-Value=entry.VeggiePizzas class="form-control" id="vegetarianPieces" ParsingErrorMessage="Must be integer value" />
+        </div>
+        <div class="form-group col">
+            <label for="veganPieces">🌽</label>
+            <InputNumber @bind-Value=entry.VeganPizzas class="form-control" id="veganPieces" ParsingErrorMessage="Must be integer value" />
+        </div>
+    </div>
+    <div class="row">
+        <div class="form-group col">
+            <label for="cost">Total Cost</label>
+            <InputNumber TValue="float" @bind-Value=entry.TotalCost class="form-control" id="cost" ParsingErrorMessage="Must be float" />
+        </div>
+        <div class="form-goup col">
+            <label for="bottles">Bottles returned</label>
+            <InputNumber @bind-Value=entry.Bottles class="form-control" id="bottles" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="annotation">Annotation</label>
+        <InputTextArea @bind-Value=entry.Annotation class="form-control" id="annotation" />
+    </div>
+    <input type="submit" value="💾 Save Changes 💾" class="btn btn-primary" />
+</EditForm>
+
+@code {
+    [Parameter]
+    public string secretpath { get; set; }
+
+    [Parameter]
+    public string entryIDstring{ get; set; }
+
+    PizzaArchiveEntry entry;
+
+    protected override void OnInitialized()
+    {
+        if (secretpath != Environment.GetEnvironmentVariable("ADMIN_PATH"))
+        {
+            NavigationManager.NavigateTo("/"); return;
+        }
+
+        entry = ArchiveService.GetEntryByID(Int32.Parse(entryIDstring));
+    }
+
+    void FormSubmitted(EditContext editContext)
+    {
+        ArchiveService.ChangeEntry(entry);
+        NavigationManager.NavigateTo("/admin" + secretpath + "/archive");
+    }
+}

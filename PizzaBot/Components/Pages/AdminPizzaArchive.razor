@@ -28,7 +28,7 @@ else
 <hr>
 
 <div style="overflow-x:scroll;">
-    <ArchiveListComponent Number="25" />
+    <ArchiveListComponent Number="25" SecretPath="@(Environment.GetEnvironmentVariable("ADMIN_PATH"))" />
 </div>
 
 @code {
