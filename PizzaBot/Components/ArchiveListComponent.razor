@@ -11,6 +11,7 @@
         <PropertyColumn Title="🍖" Property="@(e => e.MeatPizzas)" Sortable="false" />
         <PropertyColumn Title="🍄🧀" Property="@(e => e.VeggiePizzas)" Sortable="false" />
         <PropertyColumn Title="🌽" Property="@(e => e.VeganPizzas)" Sortable="false" />
+        <PropertyColumn Title="🧑" Property="@(e => e.AnonymizedOrders.Count)" Sortable="false" />
     }
     <PropertyColumn Title="🍾" Property="@(e => e.Bottles)" Sortable="false" />
     <PropertyColumn Title="€" Property="@(e=>e.TotalCost)" />
