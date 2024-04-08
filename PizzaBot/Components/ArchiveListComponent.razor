@@ -2,22 +2,58 @@
 
 @using Microsoft.AspNetCore.Components.QuickGrid
 
+
+<p>
+    Show:
+    <label><input type="checkbox" @bind="ShowDate" /> Date</label>
+    <label><input type="checkbox" @bind="ShowPizzaTotal" /> Pizzas</label>
+    <label><input type="checkbox" @bind="ShowPizzaDetailed" /> 🍖🍄🧀🌽</label>
+    <label><input type="checkbox" @bind="ShowOrderCount" /> order count</label>
+    <label><input type="checkbox" @bind="ShowBottles" /> 🍾</label>
+    <label><input type="checkbox" @bind="ShowPrice" /> Price</label>
+    <label><input type="checkbox" @bind="ShowNotes" /> Notes</label>
+    <label><input type="checkbox" @bind="ShowEdit" /> Edit Button</label>
+</p>
+
 <QuickGrid Pagination="Pagination" Items="@ArchiveService.GetAllEntries().AsQueryable()">
-    <PropertyColumn Property="@(e => e.date)" Format="yyyy.MM.dd" Sortable="true" InitialSortDirection="SortDirection.Descending" IsDefaultSortColumn="true" />
-    @if (ShowOnlyTotalPizza)
+    @if (ShowDate)
+    {
+        <PropertyColumn Property="@(e => e.date)" Format="yyyy.MM.dd" Sortable="true" InitialSortDirection="SortDirection.Descending" IsDefaultSortColumn="true" />
+    }
+    @if (ShowPizzaTotal)
     {
         <PropertyColumn Title="Pizzas" Property="@(e => (e.MeatPizzas + e.VeggiePizzas + e.VeganPizzas))" Sortable="true" />
-    } else{
+    } 
+    @if (ShowPizzaDetailed)
+    {
         <PropertyColumn Title="🍖" Property="@(e => e.MeatPizzas)" Sortable="false" />
         <PropertyColumn Title="🍄🧀" Property="@(e => e.VeggiePizzas)" Sortable="false" />
         <PropertyColumn Title="🌽" Property="@(e => e.VeganPizzas)" Sortable="false" />
-        <PropertyColumn Title="🧑" Property="@(e => e.AnonymizedOrders.Count)" Sortable="false" />
+    } 
+    @if (ShowOrderCount)
+    {
+            <PropertyColumn Title="🧑" Property="@(e => e.AnonymizedOrders.Count)" Sortable="false" />
+    } 
+    @if (ShowBottles)
+    {
+        <PropertyColumn Title="🍾" Property="@(e => e.Bottles)" Sortable="false" />
     }
-    <PropertyColumn Title="🍾" Property="@(e => e.Bottles)" Sortable="false" />
-    <PropertyColumn Title="€" Property="@(e=>e.TotalCost)" />
-    <TemplateColumn Title="🔧" Sortable="false">
-        <a href="/admin@(SecretPath)/archive/@(context.id)"><button class="btn btn-info" style="width: 2em; height: 2em; padding: 0; text-align:center;">🔧</button></a>
-    </TemplateColumn>
+    @if (ShowPrice)
+    {
+        <PropertyColumn Title="€" Property="@(e=>e.TotalCost)" />
+    }
+    @if (ShowNotes)
+    {
+            <PropertyColumn Title="Notes" Property="@(e=>e.Annotation)" />
+    }
+    @if (ShowEdit)
+    {
+        <TemplateColumn Title="🔧" Sortable="false">
+            <a href="/admin@(SecretPath)/archive/@(context.id)"><button class="btn btn-info" style="width: 2em; height: 2em; padding: 0; text-align:center;">🔧</button></a>
+        </TemplateColumn>
+    }
+
+    
 </QuickGrid>
 <Paginator State="@Pagination" />
 
@@ -37,6 +73,16 @@
 
     PaginationState Pagination;
 
+    bool ShowDate = true;
+    bool ShowPizzaTotal = true;
+    bool ShowPizzaDetailed = true;
+    bool ShowOrderCount = true;
+    bool ShowBottles = true;
+    bool ShowPrice = true;
+    bool ShowEdit = true;
+    bool ShowNotes = false;
+
+
     protected override void OnInitialized()
     {
         base.OnInitialized();
@@ -47,5 +93,13 @@
             await InvokeAsync(StateHasChanged);
         };
         ArchiveService.OnArchiveChange += Reload;
+
+        if (ShowOnlyTotalPizza)
+        {
+            ShowPizzaDetailed = false;
+            ShowBottles = false;
+            ShowOrderCount = false;
+            //ShowEdit = false;
+        }
     }
 }
