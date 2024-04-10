@@ -128,6 +128,11 @@ namespace PizzaBot.Services
 
         public void DeleteById(int id)
         {
+            if (_globalStuffService.OrdersLocked)
+            {
+                return;
+            }
+
             var request = _context.Requests.Find(id);
             var result = _context.Results.Find(id);
 
