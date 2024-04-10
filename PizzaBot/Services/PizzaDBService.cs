@@ -55,11 +55,6 @@ namespace PizzaBot.Services
                 ErrorMessage = "Request was null. If you see this, contact the admin!";
                 return null;
             }
-            if (_context.Requests.AsEnumerable().Contains(request, _reqNameEqualityComparer))
-            {
-                ErrorMessage = $"Request with name {request.Name} already exists. Use a different name!";
-                return null;
-            }
             if (request.Name == null || request.Name == "")
             {
                 ErrorMessage = "Request needs a name!";
@@ -76,10 +71,19 @@ namespace PizzaBot.Services
                 return null;
             }
 
-            //insert valid request
-            request.Id = _rnd.Next(int.MaxValue);
-            _context.Requests.Add(request);
-            _context.SaveChanges();
+            lock (_context)
+            {
+                if (_context.Requests.AsEnumerable().Contains(request, _reqNameEqualityComparer))
+                {
+                    ErrorMessage = $"Request with name {request.Name} already exists. Use a different name!";
+                    return null;
+                }
+
+                //insert valid request
+                request.Id = _rnd.Next(int.MaxValue);
+                _context.Requests.Add(request);
+                _context.SaveChanges();
+            }
 
             _globalStuffService.ShouldBalance = true;
 
@@ -93,7 +97,10 @@ namespace PizzaBot.Services
                 Balance();
             }
 
-            return _context.Requests.OrderBy(r => r.Name);
+            lock (_context)
+            {
+                return _context.Requests.OrderBy(r => r.Name);
+            }
         }
 
         public IEnumerable<PizzaResult> GetAllResults()
@@ -103,7 +110,10 @@ namespace PizzaBot.Services
                 Balance();
             }
 
-            return _context.Results.ToList();
+            lock (_context)
+            {
+                return _context.Results.ToList();
+            }
         }
 
         public PizzaResult? GetResultById(int id)
@@ -113,17 +123,23 @@ namespace PizzaBot.Services
                 Balance();
             }
 
-            return _context.Results.Find(id);
+            lock (_context)
+            {
+                return _context.Results.Find(id);
+            }
         }
 
         public PizzaRequest? GetRequestById(int id)
         {
-            if(_context.Requests.Find(id) == null)
+            lock (_context)
             {
-                return null;
-            }
+                if (_context.Requests.Find(id) == null)
+                {
+                    return null;
+                }
 
-            return _context.Requests.Find(id).GetShallowCopy();
+                return _context.Requests.Find(id).GetShallowCopy();
+            }
         }
 
         public void DeleteById(int id)
@@ -133,21 +149,24 @@ namespace PizzaBot.Services
                 return;
             }
 
-            var request = _context.Requests.Find(id);
-            var result = _context.Results.Find(id);
-
-            if (request != null)
+            lock (_context)
             {
-                _context.Requests.Remove(request);
-            }
-            if (result != null)
-            {
-                _context.Results.Remove(result);
-            }
+                var request = _context.Requests.Find(id);
+                var result = _context.Results.Find(id);
 
-            _globalStuffService.ShouldBalance = true;
+                if (request != null)
+                {
+                    _context.Requests.Remove(request);
+                }
+                if (result != null)
+                {
+                    _context.Results.Remove(result);
+                }
 
-            _context.SaveChanges();
+                _globalStuffService.ShouldBalance = true;
+
+                _context.SaveChanges();
+            }
         }
 
         public bool UpdateRequest(PizzaRequest request, out string ErrorMessage)
@@ -170,9 +189,13 @@ namespace PizzaBot.Services
                 ErrorMessage = "Request needs to have at least one piece!";
                 return false;
             }
-            _context.Requests.Remove(_context.Requests.Find(request.Id));
-            _context.Requests.Add(request);
-            _context.SaveChanges();
+
+            lock (_context)
+            {
+                _context.Requests.Remove(_context.Requests.Find(request.Id));
+                _context.Requests.Add(request);
+                _context.SaveChanges();
+            }
 
             _globalStuffService.ShouldBalance = true;
 
@@ -183,22 +206,28 @@ namespace PizzaBot.Services
         {
             Dictionary<int, PizzaRequest> orders = new Dictionary<int, PizzaRequest>();
 
-            foreach (var request in _context.Requests.ToList())
+            lock (_context)
             {
-                orders.Add(request.Id, request);
+                foreach (var request in _context.Requests.ToList())
+                {
+                    orders.Add(request.Id, request);
+                }
             }
 
-            var balancingResult = _balancingService.Distribute(orders);
+                var balancingResult = _balancingService.Distribute(orders);
 
-            _context.Results.RemoveRange(_context.Results.ToList());
-            _context.Results.AddRange(balancingResult.results.Values);
+            lock (_context) {
+                _context.Results.RemoveRange(_context.Results.ToList());
+                _context.Results.AddRange(balancingResult.results.Values);
+
+                _context.SaveChanges();
+            }
 
             _globalStuffService.MeatPizzas = balancingResult.requiredMeat;
             _globalStuffService.VeggiePizzas = balancingResult.requiredVeggie;
             _globalStuffService.VeganPizzas = balancingResult.requiredVegan;
 
             _globalStuffService.TotalCost = balancingResult.totalCost;
-            _context.SaveChanges();
 
             _globalStuffService.ShouldBalance = false;
         }
@@ -212,9 +241,12 @@ namespace PizzaBot.Services
                 _globalStuffService.VeganPizzas = 0;
                 _globalStuffService.TotalCost = 0;
 
-                _context.Requests.RemoveRange(_context.Requests);
-                _context.Results.RemoveRange(_context.Results);
-                _context.SaveChanges();
+                lock (_context)
+                {
+                    _context.Requests.RemoveRange(_context.Requests);
+                    _context.Results.RemoveRange(_context.Results);
+                    _context.SaveChanges();
+                }
                 return true;
             }
             return false;
@@ -222,13 +254,19 @@ namespace PizzaBot.Services
 
         public void MarkAsPaid(int id)
         {
-            _context.Results.Find(id).hasPaid = true;
-            _context.SaveChanges();
+            lock (_context)
+            {
+                _context.Results.Find(id).hasPaid = true;
+                _context.SaveChanges();
+            }
         }
         public void MarkAsNotPaid(int id)
         {
-            _context.Results.Find(id).hasPaid = false;
-            _context.SaveChanges();
+            lock (_context)
+            {
+                _context.Results.Find(id).hasPaid = false;
+                _context.SaveChanges();
+            }
         }
     }
 }
