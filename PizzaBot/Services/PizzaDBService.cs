@@ -32,6 +32,8 @@ namespace PizzaBot.Services
         private PizzaRequestNameEqualityComparer _reqNameEqualityComparer = new PizzaRequestNameEqualityComparer();
         private Random _rnd = new Random();
 
+        public event EventHandler OnBalanced;
+
         public PizzaDBService(PizzaContext context, PizzaBalancingService balancingService, GlobalStuffService globalStuffService)
         {
             _context = context;
@@ -230,6 +232,8 @@ namespace PizzaBot.Services
             _globalStuffService.TotalCost = balancingResult.totalCost;
 
             _globalStuffService.ShouldBalance = false;
+
+            OnBalanced(this, null);
         }
 
         public bool DeleteAllOrders(string passPhrase)

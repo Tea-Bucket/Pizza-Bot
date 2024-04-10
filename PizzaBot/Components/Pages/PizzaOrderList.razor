@@ -4,6 +4,7 @@
 @inject PizzaDBService PizzaDBService
 @inject Microsoft.AspNetCore.Components.NavigationManager navigationManager
 @inject GlobalStuffService GlobalStuffService
+@rendermode InteractiveServer
 @attribute [StreamRendering]
 
 <PageTitle>Pizza List</PageTitle>
@@ -117,5 +118,14 @@
     private void NavigateToEdit(int id)
     {
         navigationManager.NavigateTo($"/order/edit/{id}");
+    }
+
+    protected override void OnInitialized()
+    {
+        EventHandler Reload = async (sender, eventArgs) =>
+            {
+                await InvokeAsync(StateHasChanged);
+            };
+        PizzaDBService.OnBalanced += Reload;
     }
 }
