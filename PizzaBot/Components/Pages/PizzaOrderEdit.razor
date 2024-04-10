@@ -162,7 +162,7 @@
     protected override void OnInitialized()
     {
         Order = pizzaDBService.GetRequestById(id);
-        if(Order == null)
+        if (Order == null || GlobalStuffService.OrdersLocked)
         {
             Navigation.NavigateTo("/orderlist", true);
         }
