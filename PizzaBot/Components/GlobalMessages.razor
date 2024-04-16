@@ -7,9 +7,18 @@
 }
 @if (GlobalStuffService.Message.Length >= 2)
 {
-    <p style="font-size: 1.5em; color: limegreen;"> @GlobalStuffService.Message </p>
-
+    <div class="global_message"> @((MarkupString)Markdig.Markdown.ToHtml(GlobalStuffService.Message)) </div>
 }
+
+<style>
+    .global_message > * {
+        color: limegreen;
+    }
+
+    .global_message > p {
+        font-size: 1.5em;
+    }
+</style>
 
 @code{
     protected override void OnInitialized()
