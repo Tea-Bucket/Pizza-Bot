@@ -27,7 +27,8 @@
         <ValidationMessage For="() => Order.Name" />
     </div>
     <label for="PiecesGroup" style="margin-top: 1em;">Pieces</label>
-    <span style="font-size: 0.7em;">One slice = ca. @GlobalStuffService.GetSizeOfSliceInCM2().ToString("F0") cm<sup>2</sup></span>
+    <span style="font-size: 0.6em; color: gray;">One slice = ca. @GlobalStuffService.GetSizeOfSliceInCM2().ToString("F0") cm<sup>2</sup></span>
+    <PricePerPieceDisplay />
     <div class="row" id="PiecesGroup">
         <div class="form-group col">
             <label for="meatPieces">🍖</label>
@@ -49,15 +50,16 @@
         <label for="priorityMeat" style="text-align:center;"> Priority </label>
         <p style="text-align:center; font-size: 0.8em; margin: 0;">
             The balancing algorithm tries to avoid changes of the corresponding Variable <br />
-            <i style="font-size: 0.8em;">E.g. If you want to only get pieces from your chosen category put the slider all the way to the left</i></p>
-        
+            <i style="font-size: 0.8em;">E.g. If you want to only get pieces from your chosen category put the slider all the way to the left</i>
+        </p>
+
         <div class="priority-slider-container">
             <div> Category </div>
             <RadzenSlider @bind-Value=Order.priority TValue="float" Min="0" Max="1" Step="0.01" id="priorityMeat" />
             <div> Total Count</div>
         </div>
     </div>
-    <input type="submit" value="Submit" class="btn btn-primary"/>
+    <input type="submit" value="Submit" class="btn btn-primary" />
 </EditForm>
 
 <style>
@@ -78,10 +80,10 @@
         margin: 2rem 3px;
     }
 
-    .priority-slider-container{
+    .priority-slider-container {
         padding-bottom: 1rem;
         display: flex;
-        flex-direction:row;
+        flex-direction: row;
         align-items: center;
         gap: 1em;
         font-size: 0.75em;
@@ -112,7 +114,7 @@
         submissionSuccessful = true;
 
         Order = new PizzaRequest();
-    
+
         NavigationManager.NavigateTo("/orderlist");
     }
 }

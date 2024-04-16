@@ -22,7 +22,8 @@
         @Order.Name
     </h3>
     <label for="PiecesGroup" style="margin-top: 1em;">Pieces</label>
-    <span style="font-size: 0.7em;">One slice = ca. @GlobalStuffService.GetSizeOfSliceInCM2().ToString("F0") cm<sup>2</sup></span>
+    <span style="font-size: 0.6em; color: gray;">One slice = ca. @GlobalStuffService.GetSizeOfSliceInCM2().ToString("F0") cm<sup>2</sup></span>
+    <PricePerPieceDisplay />
     <div class="row" id="PiecesGroup">
         <div class="form-group col">
             <label for="meatPieces">🍖</label>
