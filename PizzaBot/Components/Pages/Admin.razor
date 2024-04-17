@@ -12,16 +12,24 @@
 
 
 <h4>Order Locking</h4>
-<button @onclick="ToggleOrdersLocked" class="btn btn-danger">
-    @if (GlobalStuffService.OrdersLocked)
-    {
+@if (GlobalStuffService.OrdersLocked)
+{
+    <button @onclick="UnlockOrders" class="btn btn-danger">
         <span>Unlock Orders</span>
-    }
-    else
-    {
+    </button>
+}
+else
+{
+    <button @onclick="LockOrders" class="btn btn-danger">
         <span>Lock Orders</span>
-    }
-</button>
+    </button>
+}
+
+@if (ShowUnlockConfirmation)
+{
+    <p style="font-size: 2em; color: red;">Order(s) have already been marked as payed. If you unlock payment information WILL be lost!</p>
+    <button @onclick="ConfirmedUnlockOrders" class="btn btn-danger">I understand the risks. Unlock anyways</button>
+}
 
 
 <h4>Global Message</h4>
@@ -136,15 +144,33 @@
     bool WrongDeletionPasscode = false;
     string DeletionPasscode = "";
 
+    bool ShowUnlockConfirmation = false;
+
     void SaveNewPizzaConfig(EditContext editContext)
     {
         GlobalStuffService.SetConfig(PConfig);
         GlobalStuffService.ShouldBalance = true;
     }
 
-    void ToggleOrdersLocked()
+    void LockOrders()
     {
-        GlobalStuffService.SetOrdersLocked(!GlobalStuffService.OrdersLocked);
+        GlobalStuffService.SetOrdersLocked(true);
+    }
+
+    void UnlockOrders()
+    {
+        if(PizzaDBService.GetAllResults().Where(o => o.hasPaid).Count() > 0)
+        {
+            ShowUnlockConfirmation = true;
+            return;
+        }
+        GlobalStuffService.SetOrdersLocked(false);
+    }
+
+    void ConfirmedUnlockOrders()
+    {
+        ShowUnlockConfirmation = false;
+        GlobalStuffService.SetOrdersLocked(false);
     }
 
     void SetGlobalMessage()
@@ -164,4 +190,4 @@
     {
         PConfig = GlobalStuffService.GetConfig() ?? new PizzaConfig();
     }
-}
+    }

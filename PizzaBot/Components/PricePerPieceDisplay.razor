@@ -1,0 +1,11 @@
+﻿@inject GlobalStuffService GlobalStuffService
+@using System.Globalization
+
+<p>Price per 🍕: @((GlobalStuffService.GetConfig().Price / (GlobalStuffService.GetConfig().Fragments * 100.0f)).ToString("C2", CultureInfo.CreateSpecificCulture("de-DE")))</p>
+
+<style>
+    p{
+        font-size: 0.6em;
+        color: gray;
+    }
+</style>
