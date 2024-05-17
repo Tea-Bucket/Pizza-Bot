@@ -18,7 +18,7 @@
 <QuickGrid Pagination="Pagination" Items="@ArchiveService.GetAllEntries().AsQueryable()">
     @if (ShowDate)
     {
-        <PropertyColumn Property="@(e => e.date)" Format="yyyy.MM.dd" Sortable="true" InitialSortDirection="SortDirection.Descending" IsDefaultSortColumn="true" />
+        <PropertyColumn Property="@(e => e.date)" Format="dd.MM.yyyy" Sortable="true" InitialSortDirection="SortDirection.Descending" IsDefaultSortColumn="true" />
     }
     @if (ShowPizzaTotal)
     {
