@@ -2,7 +2,7 @@ using System.Diagnostics;
 using PizzaBot.Models;
 
 namespace PizzaBot.Services {
-        public enum PizzaKind {
+    public enum PizzaKind {
         Meat,
         Vegetarian,
         Vegan
@@ -87,12 +87,20 @@ namespace PizzaBot.Services {
             var a_total = distribution.Reduce(0u, (a, b) => a + b);
 
             var total_diff = r_total > a_total ? r_total - a_total : a_total - r_total;
-            static float Convert(float diff, float total, float p) {
+            static float Convert(float diff, float total, float p, bool more) {
                 var perc_of_total = diff / total;
-                var scaled = perc_of_total / Math.Max(1 - perc_of_total, 0);
-                return scaled * p;
+                if (more) {
+                    var scaled = 1 / 1 - (1 - 1 / (2 * total)) * (perc_of_total - 1) - 1;
+                    if (scaled < 0) {
+                        scaled = float.PositiveInfinity;
+                    }
+                    return scaled * p;
+                } else {
+                    var scaled = perc_of_total / Math.Max(1 - perc_of_total, 0);
+                    return scaled * p;
+                }
             }
-            var total_pentalty = total_diff == 0 ? 0 : Convert(total_diff, r_total, count_pref);
+            var total_pentalty = total_diff == 0 ? 0 : Convert(total_diff, r_total, count_pref, a_total > r_total);
 
             static PizzaKindArray<float> PrepareValues(PizzaKindArray<uint> values, uint total) => values.Map(v => (float)v / total);
 
