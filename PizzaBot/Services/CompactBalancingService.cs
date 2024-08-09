@@ -220,7 +220,7 @@ namespace PizzaBot.Services {
             var best_config = PizzaKindArray<bool>.Splat(false);
             var penalty = new TotalPenalty {
                 worst = float.PositiveInfinity,
-                average = float.NegativeInfinity,
+                average = float.PositiveInfinity,
             };
 
             var next_distr = new PizzaKindArray<uint>[requests.Length];
@@ -321,6 +321,14 @@ namespace PizzaBot.Services {
             }
 
             var (_, config, distribution, is_valid) = GetBest(pieces_per_whole, requests);
+
+            if (!is_valid) {
+                for (var i = 0; i < distribution.Length; i++) {
+                    distribution[i] = PizzaKindArray<uint>.Splat(0);
+                }
+
+                config = PizzaKindArray<uint>.Splat(0);
+            }
 
             var results = new Dictionary<int, PizzaResult>(requests.Length);
             for (var i = 0; i < requests.Length; i++) {
