@@ -90,7 +90,7 @@ namespace PizzaBot.Services {
             static float Convert(float diff, float total, float p, bool more) {
                 var perc_of_total = diff / total;
                 if (more) {
-                    var scaled = 1 / 1 - (1 - 1 / (2 * total)) * (perc_of_total - 1) - 1;
+                    var scaled = 1 / (1 - (1 - 1 / (2 * total)) * (perc_of_total - 1)) - 1;
                     if (scaled < 0) {
                         scaled = float.PositiveInfinity;
                     }
