@@ -112,7 +112,7 @@ namespace PizzaBot.Services
             _config = _globalStuffService.GetConfig();
 
             if (_config!.PenaltyType is PenaltyType.Compact) {
-                var (results, config) = CompactBalance.Distribute(orders, (uint)_config.Fragments);
+                var (results, config) = CompactBalance.Distribute(orders, (uint)_config.Fragments, _config.Price / 100f / _config.Fragments);
                 return (results, (int)config.meat, (int)config.vegetarian, (int)config.vegan, config.Reduce(0u, (acc, val) => acc + val) * _config.Price / 100.0f);
             }
 

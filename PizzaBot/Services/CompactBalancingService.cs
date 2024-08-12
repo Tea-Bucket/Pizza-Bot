@@ -300,7 +300,7 @@ namespace PizzaBot.Services {
             return (penalty, config, distribution: best_distribution, !float.IsPositiveInfinity(penalty.worst));
         }
 
-        public static (Dictionary<int, PizzaResult> results, PizzaKindArray<uint> config) Distribute(Dictionary<int, PizzaRequest> orders, uint pieces_per_whole) {
+        public static (Dictionary<int, PizzaResult> results, PizzaKindArray<uint> config) Distribute(Dictionary<int, PizzaRequest> orders, uint pieces_per_whole, float price_per_piece) {
             var indices = new int[orders.Count];
             var requests = new Request[orders.Count];
 
@@ -337,6 +337,7 @@ namespace PizzaBot.Services {
                     resPiecesMeat = (int)distribution[i].meat,
                     resPiecesVegetarian = (int)distribution[i].vegetarian,
                     resPiecesVegan = (int)distribution[i].vegan,
+                    totalCost = distribution[i].Reduce(0u, (a, b) => a + b) * price_per_piece
                 });
             }
 
