@@ -6,7 +6,8 @@ namespace PizzaBot.Models
     {
         Tuxic = 0,
         PfeifferTreimer = 1,
-        PfeifferTreimerLockedDown = 2
+        PfeifferTreimerLockedDown = 2,
+        Compact = 3
     }
 
     public class PizzaConfig
