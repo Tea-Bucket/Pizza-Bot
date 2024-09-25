@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using PizzaBot.Models;
 
 namespace PizzaBot.Services {
@@ -7,7 +8,6 @@ namespace PizzaBot.Services {
         Vegetarian,
         Vegan
     }
-
 
     public struct PizzaKindArray<T> {
         public T meat;
@@ -72,18 +72,19 @@ namespace PizzaBot.Services {
         public delegate void RefFirst<S>(ref T first, S second);
     }
 
-    public struct Request {
-        public PizzaKindArray<uint> distribution;
-        public float preference;
+    public interface ICostCalculator {
+        abstract static float CalculateCost(Request request, PizzaKindArray<uint> distribution);
+    }
 
-        public readonly float CalculateCost(PizzaKindArray<uint> distribution) {
+    public struct ShapeCost : ICostCalculator {
+        public static float CalculateCost(Request request, PizzaKindArray<uint> distribution) {
             const float epsilon = 0.0001f;
 
-            var pref = 1 - this.preference;
+            var pref = 1 - request.preference;
             var count_pref = (1 - pref) / pref + 0.01f;
             var shape_pref = pref / (1 - pref) + 0.01f;
 
-            var r_total = this.distribution.Reduce(0u, (a, b) => a + b);
+            var r_total = request.distribution.Reduce(0u, (a, b) => a + b);
             var a_total = distribution.Reduce(0u, (a, b) => a + b);
 
             var total_diff = r_total > a_total ? r_total - a_total : a_total - r_total;
@@ -104,7 +105,7 @@ namespace PizzaBot.Services {
 
             static PizzaKindArray<float> PrepareValues(PizzaKindArray<uint> values, uint total) => values.Map(v => (float)v / total);
 
-            var r_perc = PrepareValues(this.distribution, r_total);
+            var r_perc = PrepareValues(request.distribution, r_total);
             var a_perc = PrepareValues(distribution, a_total);
 
             var diffs = r_perc.ZipMap(a_perc, (r, a) => r > a ? r - a : a - r);
@@ -115,6 +116,50 @@ namespace PizzaBot.Services {
         }
     }
 
+    public struct PfeifferTreimerModified : ICostCalculator {
+        public static float CalculateCost(Request request, PizzaKindArray<uint> distribution) {
+            const bool locked_down = false;
+            const bool ok_check = false;
+            const bool zero_check = false;
+
+            var req = request.distribution;
+            var prio = request.preference;
+
+            var total_req = req.Reduce(0u, (a, v) => a + v);
+            var total_res = distribution.Reduce(0u, (a, v) => a + v);
+
+            if (zero_check && total_res == 0) {
+                return float.PositiveInfinity;
+            }
+
+            var total_diff = total_req > total_res ? total_req - total_res : total_res - total_req;
+
+            var abs_share = req.ZipMap(distribution, (r, a) => r > a ? r - a : a - r);
+
+            var penalty_count = (float)total_diff;
+            var penalty_cat = abs_share.Reduce(0u, (a, v) => a + v) / (float)CompactBalance.Length;
+
+            var priority = locked_down ? prio * 0.7f + 0.2f : prio;
+
+            var penalty = priority * penalty_count + (1.0f - priority) * penalty_cat;
+
+            if (ok_check) {
+                var ok = req.ZipMap(distribution, (req, res) => !(req == 0 && res != 0));
+
+                if (!ok.Reduce(true, (l, r) => l && r)) {
+                    return float.PositiveInfinity;
+                }
+            }
+
+            return penalty;
+        }
+    }
+
+    public struct Request {
+        public PizzaKindArray<uint> distribution;
+        public float preference;
+    }
+
     public static class CompactBalance {
         public const uint Length = 3;
 
@@ -123,7 +168,7 @@ namespace PizzaBot.Services {
             public PizzaKindArray<bool> offset;
             public float penalty;
 
-            public static QueueElement? BestOffset(PizzaKindArray<bool> adds, PizzaKindArray<uint> deltas, Request request, PizzaKindArray<uint> assigned, uint index) {
+            public static QueueElement? BestOffset<T>(PizzaKindArray<bool> adds, PizzaKindArray<uint> deltas, Request request, PizzaKindArray<uint> assigned, uint index) where T : ICostCalculator {
                 PizzaKindArray<bool>? best = null;
                 var penalty = float.PositiveInfinity;
                 for (var idx = 1u; idx < (1 << (int)Length); idx++) {
@@ -147,7 +192,7 @@ namespace PizzaBot.Services {
                         }
                     }
 
-                    var pen = request.CalculateCost(copy);
+                    var pen = T.CalculateCost(request, copy);
 
                     if (pen < penalty) {
                         penalty = pen;
@@ -206,7 +251,7 @@ namespace PizzaBot.Services {
             }
         }
 
-        private static (TotalPenalty penalty, PizzaKindArray<uint> config, PizzaKindArray<uint>[] distribution, bool is_valid) GetBest(uint pieces_per_whole, Request[] requests) {
+        private static (TotalPenalty penalty, PizzaKindArray<uint> config, PizzaKindArray<uint>[] distribution, bool is_valid) GetBest<T>(uint pieces_per_whole, Request[] requests) where T : ICostCalculator {
             var totals = PizzaKindArray<uint>.Splat(0);
             foreach (var req in requests) {
                 for (PizzaKind i = 0; (uint)i < Length; i++) {
@@ -248,7 +293,7 @@ namespace PizzaBot.Services {
                 queue.Clear();
                 for (uint i = 0; i < requests.Length; i++) {
                     next_distr[i] = requests[i].distribution;
-                    if (QueueElement.BestOffset(adds, deltas, requests[i], requests[i].distribution, i) is QueueElement best) {
+                    if (QueueElement.BestOffset<T>(adds, deltas, requests[i], requests[i].distribution, i) is QueueElement best) {
                         queue.Enqueue(best, best.penalty);
                     }
                 }
@@ -273,7 +318,7 @@ namespace PizzaBot.Services {
                     }
 
                     enqueue:
-                    if (QueueElement.BestOffset(adds, deltas, requests[element.request_index], next_distr[element.request_index], element.request_index) is QueueElement best) {
+                    if (QueueElement.BestOffset<T>(adds, deltas, requests[element.request_index], next_distr[element.request_index], element.request_index) is QueueElement best) {
                         queue.Enqueue(best, best.penalty);
                     }
                 }
@@ -300,7 +345,7 @@ namespace PizzaBot.Services {
             return (penalty, config, distribution: best_distribution, !float.IsPositiveInfinity(penalty.worst));
         }
 
-        public static (Dictionary<int, PizzaResult> results, PizzaKindArray<uint> config) Distribute(Dictionary<int, PizzaRequest> orders, uint pieces_per_whole, float price_per_piece) {
+        public static (Dictionary<int, PizzaResult> results, PizzaKindArray<uint> config) Distribute<T>(Dictionary<int, PizzaRequest> orders, uint pieces_per_whole, float price_per_piece) where T : ICostCalculator {
             var indices = new int[orders.Count];
             var requests = new Request[orders.Count];
 
@@ -320,7 +365,7 @@ namespace PizzaBot.Services {
                 }
             }
 
-            var (_, config, distribution, is_valid) = GetBest(pieces_per_whole, requests);
+            var (_, config, distribution, is_valid) = GetBest<T>(pieces_per_whole, requests);
 
             if (!is_valid) {
                 for (var i = 0; i < distribution.Length; i++) {
