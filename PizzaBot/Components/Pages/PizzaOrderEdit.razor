@@ -200,6 +200,8 @@
 
         Order = pizzaDBService.GetRequestById(id);
 
+        Navigation.NavigateTo("/orderlist", true);
+
         // if(Order.reqPiecesMeat + Order.reqPiecesVegetarian + Order.reqPiecesVegan < 1)
         // {
         //     submittedZeroPieces = true;
